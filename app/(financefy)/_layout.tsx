@@ -16,7 +16,7 @@ export default function FinancefyLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="home/index"
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => <Home size={22} color={color} />,
@@ -43,7 +43,7 @@ export default function FinancefyLayout() {
                 // Memberikan feedback getaran
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 // Navigasi ke halaman input
-                router.push("./(financefy)/add-transaction");
+                router.push("/(financefy)/add-transaction");
               }}
             >
               <View style={styles.addButtonCircle}>
