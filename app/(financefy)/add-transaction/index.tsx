@@ -1,33 +1,26 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import {
-    Calendar,
-    Check,
-    ChevronRight,
-    Notebook,
-    X,
+  Calendar,
+  Check,
+  ChevronRight,
+  Notebook,
+  X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { db } from "../../services/database";
-import { styles } from "./styles";
-
-// --- DATA DUMMY ---
-const WALLETS = [
-  { id: "1", name: "Cash", icon: "💵" },
-  { id: "2", name: "Bank BCA", icon: "🏦" },
-  { id: "3", name: "E-Wallet (Gopay)", icon: "📱" },
-];
+import { keypadStyles, styles } from "./styles";
 
 const CATEGORIES = [
   { id: "1", name: "Makanan", icon: "🍔", type: "expense" },
@@ -40,71 +33,76 @@ const CATEGORIES = [
 export default function AddTransactionScreen() {
   const router = useRouter();
 
-  // States
+  // --- STATES ---
   const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(""); // Angka murni disimpan di sini
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date());
   const [excludeFromReport, setExcludeFromReport] = useState(false);
 
-  // Selection States
-  const [selectedWallet, setSelectedWallet] = useState(WALLETS[0]);
+  // --- DATA STATES ---
+  const [dbWallets, setDbWallets] = useState<any[]>([]);
+  const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState({
     name: "Pilih Kategori",
     icon: "✨",
   });
 
-  // UI States
+  // --- UI STATES ---
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [modalVisible, setModalVisible] = useState<{
     show: boolean;
     type: "wallet" | "category";
   }>({ show: false, type: "wallet" });
 
-  const openPicker = (pickerType: "wallet" | "category") => {
-    setModalVisible({ show: true, type: pickerType });
+  useEffect(() => {
+    loadWallets();
+  }, []);
+
+  const loadWallets = async () => {
+    try {
+      const result: any[] = await db.getAllAsync("SELECT * FROM wallets");
+      setDbWallets(result);
+      if (result.length > 0) setSelectedWallet(result[0]);
+    } catch (error) {
+      console.error("Gagal ambil wallet:", error);
+    }
   };
 
-  const renderPickerItem = ({ item }: any) => {
-    const isSelected =
-      modalVisible.type === "wallet"
-        ? selectedWallet.name === item.name
-        : selectedCategory.name === item.name;
+  // --- LOGIC FUNCTIONS ---
+  const handleKeyPress = (val: string) => {
+    if (val === "DEL") {
+      setAmount((prev) => prev.slice(0, -1));
+    } else if (val === "000") {
+      // Jangan tambahkan 000 jika masih kosong
+      if (amount === "" || amount === "0") return;
+      setAmount((prev) => prev + "000");
+    } else {
+      // Mencegah double nol di depan
+      if (amount === "0" && val === "0") return;
+      setAmount((prev) => (prev === "0" ? val : prev + val));
+    }
+  };
 
-    return (
-      <TouchableOpacity
-        style={[styles.pickerItem, isSelected && styles.pickerItemActive]}
-        onPress={() => {
-          if (modalVisible.type === "wallet") setSelectedWallet(item);
-          else setSelectedCategory(item);
-          setModalVisible({ ...modalVisible, show: false });
-        }}
-      >
-        <Text style={styles.pickerIcon}>{item.icon}</Text>
-        <Text style={styles.pickerText}>{item.name}</Text>
-        {isSelected && <Check size={18} color="#2ecc71" />}
-      </TouchableOpacity>
-    );
+  const formatRibuan = (num: string) => {
+    if (!num) return "0";
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   const handleSave = async () => {
-    // 1. Validasi Input
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert("Error", "Masukkan nominal yang valid");
       return;
     }
-    if (selectedCategory.name === "Pilih Kategori") {
-      Alert.alert("Error", "Pilih kategori terlebih dahulu");
+    if (!selectedWallet || selectedCategory.name === "Pilih Kategori") {
+      Alert.alert("Error", "Lengkapi data dompet dan kategori");
       return;
     }
 
     try {
-      // 2. Eksekusi INSERT
       await db.runAsync(
-        `INSERT INTO transactions (
-          type, amount, wallet_name, wallet_icon, 
-          category_name, category_icon, note, date, exclude_from_report
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO transactions (type, amount, wallet_name, wallet_icon, category_name, category_icon, note, date, exclude_from_report) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           type,
           parseFloat(amount),
@@ -118,24 +116,41 @@ export default function AddTransactionScreen() {
         ],
       );
 
-      Alert.alert("Berhasil", "Transaksi telah disimpan!", [
+      const balanceChange =
+        type === "expense" ? -parseFloat(amount) : parseFloat(amount);
+      await db.runAsync(
+        "UPDATE wallets SET balance = balance + ? WHERE id = ?",
+        [balanceChange, selectedWallet.id],
+      );
+
+      Alert.alert("Berhasil", "Transaksi disimpan!", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error) {
-      console.error("Gagal simpan:", error);
-      Alert.alert("Error", "Gagal menyimpan transaksi ke database.");
+      Alert.alert("Error", "Gagal menyimpan transaksi.");
     }
+  };
+
+  const openPicker = (pickerType: "wallet" | "category") => {
+    if (pickerType === "wallet" && dbWallets.length === 0) {
+      Alert.alert("Ops!", "Buat dompet dulu di menu Akun.", [
+        { text: "Ke Akun", onPress: () => router.push("/account") },
+        { text: "Batal" },
+      ]);
+      return;
+    }
+    setModalVisible({ show: true, type: pickerType });
   };
 
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={20}>
+        <TouchableOpacity onPress={() => router.back()}>
           <X color="#1A1A1A" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaksi Baru</Text>
-        <TouchableOpacity onPress={() => handleSave()}>
+        <TouchableOpacity onPress={handleSave}>
           <Text style={styles.saveBtn}>Simpan</Text>
         </TouchableOpacity>
       </View>
@@ -143,7 +158,7 @@ export default function AddTransactionScreen() {
       <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
         {/* TYPE SELECTOR */}
         <View style={styles.typeSelector}>
-          {["expense", "income", "debt"].map((t) => (
+          {["expense", "income"].map((t) => (
             <TouchableOpacity
               key={t}
               onPress={() => setType(t)}
@@ -152,50 +167,48 @@ export default function AddTransactionScreen() {
               <Text
                 style={[styles.typeLabel, type === t && styles.typeLabelActive]}
               >
-                {t === "expense"
-                  ? "Keluar"
-                  : t === "income"
-                    ? "Masuk"
-                    : "Hutang"}
+                {t === "expense" ? "Keluar" : "Masuk"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* INPUT NOMINAL */}
+        {/* INPUT NOMINAL (Custom View, No TextInput) */}
         <View style={styles.inputSection}>
           <Text style={styles.label}>Jumlah Nominal</Text>
           <View style={styles.amountInputRow}>
             <Text style={styles.currency}>Rp</Text>
-            <TextInput
-              style={styles.amountInput}
-              placeholder="0"
-              keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
-              autoFocus
-            />
+            <Text
+              style={[
+                keypadStyles.amountText,
+                { color: amount ? "#1A1A1A" : "#CCC" },
+              ]}
+            >
+              {formatRibuan(amount)}
+            </Text>
           </View>
         </View>
 
         {/* FORM ITEMS */}
         <View style={styles.formSection}>
-          {/* Picker Wallet */}
           <TouchableOpacity
             style={styles.formItem}
             onPress={() => openPicker("wallet")}
           >
             <View style={styles.iconCircle}>
-              <Text style={{ fontSize: 18 }}>{selectedWallet.icon}</Text>
+              <Text style={{ fontSize: 18 }}>
+                {selectedWallet?.icon || "❓"}
+              </Text>
             </View>
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>Metode Pembayaran</Text>
-              <Text style={styles.itemValue}>{selectedWallet.name}</Text>
+              <Text style={styles.itemValue}>
+                {selectedWallet?.name || "Pilih Dompet"}
+              </Text>
             </View>
             <ChevronRight size={18} color="#D1D1D1" />
           </TouchableOpacity>
 
-          {/* Picker Category */}
           <TouchableOpacity
             style={styles.formItem}
             onPress={() => openPicker("category")}
@@ -242,7 +255,7 @@ export default function AddTransactionScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.switchTitle}>Abaikan Laporan</Text>
             <Text style={styles.switchSub}>
-              Transaksi ini tidak akan masuk dalam kalkulasi budget bulanan.
+              Tidak masuk dalam kalkulasi budget.
             </Text>
           </View>
           <Switch
@@ -253,13 +266,38 @@ export default function AddTransactionScreen() {
         </View>
       </ScrollView>
 
-      {/* MODAL PICKER (BOTTOM SHEET STYLE) */}
+      {/* KEYPAD */}
+      <View style={keypadStyles.container}>
+        {[
+          ["1", "2", "3"],
+          ["4", "5", "6"],
+          ["7", "8", "9"],
+          ["000", "0", "DEL"],
+        ].map((row, i) => (
+          <View key={i} style={keypadStyles.row}>
+            {row.map((k) => (
+              <TouchableOpacity
+                key={k}
+                style={keypadStyles.key}
+                onPress={() => handleKeyPress(k)}
+              >
+                {k === "DEL" ? (
+                  <X size={24} color="#e74c3c" />
+                ) : (
+                  <Text style={keypadStyles.keyText}>{k}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
+      </View>
+
+      {/* MODAL PICKER (Reuse for Category & Wallet) */}
       <Modal visible={modalVisible.show} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {" "}
                 Pilih {modalVisible.type === "wallet" ? "Dompet" : "Kategori"}
               </Text>
               <TouchableOpacity
@@ -273,15 +311,43 @@ export default function AddTransactionScreen() {
             <FlatList
               data={
                 modalVisible.type === "wallet"
-                  ? WALLETS
-                  : CATEGORIES.filter((c) =>
-                      type === "expense"
-                        ? c.type === "expense"
-                        : c.type === "income",
-                    )
+                  ? dbWallets
+                  : CATEGORIES.filter((c) => c.type === type)
               }
-              renderItem={renderPickerItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) =>
+                item.id?.toString() || index.toString()
+              }
+              renderItem={({ item }) => {
+                const isSelected =
+                  modalVisible.type === "wallet"
+                    ? selectedWallet?.id === item.id
+                    : selectedCategory.name === item.name;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.pickerItem,
+                      isSelected && styles.pickerItemActive,
+                    ]}
+                    onPress={() => {
+                      if (modalVisible.type === "wallet")
+                        setSelectedWallet(item);
+                      else setSelectedCategory(item);
+                      setModalVisible({ ...modalVisible, show: false });
+                    }}
+                  >
+                    <Text style={styles.pickerIcon}>{item.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pickerText}>{item.name}</Text>
+                      {modalVisible.type === "wallet" && (
+                        <Text style={{ fontSize: 10, color: "#999" }}>
+                          Saldo: Rp {item.balance.toLocaleString()}
+                        </Text>
+                      )}
+                    </View>
+                    {isSelected && <Check size={18} color="#2ecc71" />}
+                  </TouchableOpacity>
+                );
+              }}
               contentContainerStyle={{ paddingBottom: 30 }}
             />
           </View>

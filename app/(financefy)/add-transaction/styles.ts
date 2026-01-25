@@ -1,4 +1,6 @@
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
+
+const { width } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
@@ -57,6 +59,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  amountText: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
   currency: {
     fontSize: 24,
     fontWeight: "300",
@@ -95,6 +102,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     marginTop: 30,
+    marginBottom: 20,
     marginHorizontal: 20,
     borderRadius: 20,
     backgroundColor: "#F9FAFB",
@@ -136,4 +144,35 @@ export const styles = StyleSheet.create({
   },
   pickerIcon: { fontSize: 22, marginRight: 15 },
   pickerText: { flex: 1, fontSize: 16, color: "#1A1A1A", fontWeight: "500" },
+});
+
+export const keypadStyles = StyleSheet.create({
+  container: {
+    backgroundColor: "#F8F9FA",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#EEE",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 5,
+  },
+  key: {
+    width: width / 3 - 20,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 15,
+  },
+  keyText: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#1A1A1A",
+  },
+  // Tambahan untuk tampilan Text pengganti Input
+  amountText: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
 });
