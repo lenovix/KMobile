@@ -1,6 +1,8 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { initDatabase } from "./services/database";
 
 function RootLayoutNav() {
   return (
@@ -20,6 +22,10 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    initDatabase();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <RootLayoutNav />

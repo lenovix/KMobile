@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+    Alert,
     FlatList,
     Modal,
     ScrollView,
@@ -18,6 +19,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { db } from "../../services/database";
 import { styles } from "./styles";
 
 // --- DATA DUMMY ---
@@ -85,6 +87,46 @@ export default function AddTransactionScreen() {
     );
   };
 
+  const handleSave = async () => {
+    // 1. Validasi Input
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert("Error", "Masukkan nominal yang valid");
+      return;
+    }
+    if (selectedCategory.name === "Pilih Kategori") {
+      Alert.alert("Error", "Pilih kategori terlebih dahulu");
+      return;
+    }
+
+    try {
+      // 2. Eksekusi INSERT
+      await db.runAsync(
+        `INSERT INTO transactions (
+          type, amount, wallet_name, wallet_icon, 
+          category_name, category_icon, note, date, exclude_from_report
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          type,
+          parseFloat(amount),
+          selectedWallet.name,
+          selectedWallet.icon,
+          selectedCategory.name,
+          selectedCategory.icon,
+          note,
+          date.toISOString(),
+          excludeFromReport ? 1 : 0,
+        ],
+      );
+
+      Alert.alert("Berhasil", "Transaksi telah disimpan!", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error("Gagal simpan:", error);
+      Alert.alert("Error", "Gagal menyimpan transaksi ke database.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -93,7 +135,7 @@ export default function AddTransactionScreen() {
           <X color="#1A1A1A" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaksi Baru</Text>
-        <TouchableOpacity onPress={() => console.log("Save")}>
+        <TouchableOpacity onPress={() => handleSave()}>
           <Text style={styles.saveBtn}>Simpan</Text>
         </TouchableOpacity>
       </View>
