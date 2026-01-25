@@ -32,17 +32,16 @@ export default function FinancefyLayout() {
 
       {/* TOMBOL TAMBAH (+) DENGAN NAVIGASI REAL */}
       <Tabs.Screen
-        name="add-transaction"
+        name="add-transaction/index" // 1. UBAH INI
         options={{
           title: "",
           tabBarButton: (props) => (
             <TouchableOpacity
-              activeOpacity={0.8} // Efek memudar saat ditekan
+              activeOpacity={0.8}
               style={styles.addButtonWrapper}
               onPress={() => {
-                // Memberikan feedback getaran
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // Navigasi ke halaman input
+                // 2. Navigasi ke rute yang benar
                 router.push("/(financefy)/add-transaction");
               }}
             >
