@@ -1,24 +1,40 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { View } from "react-native";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+// Kita buat komponen wrapper agar useSafeAreaInsets bisa bekerja
+function RootLayoutNav() {
+  const insets = useSafeAreaInsets();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "white", // Pastikan background konsisten
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}
+    >
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="launcher" />
+        <Stack.Screen name="(financefy)" />
       </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    // SafeAreaProvider harus membungkus seluruh aplikasi
+    <SafeAreaProvider>
+      <RootLayoutNav />
+    </SafeAreaProvider>
   );
 }
