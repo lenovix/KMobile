@@ -72,11 +72,18 @@ export default function AddTransactionScreen() {
   // --- LOGIC FUNCTIONS ---
   const handleKeyPress = (val: string) => {
     if (val === "DEL") {
-      setAmount((prev) => prev.slice(0, -1));
+      setAmount((prev) => prev.toString().slice(0, -1));
+    } else if (val === "AC") {
+      setAmount("");
     } else if (val === "000") {
-      // Jangan tambahkan 000 jika masih kosong
-      if (amount === "" || amount === "0") return;
+      if (amount === "" || /[+\-*/]$/.test(amount)) return;
       setAmount((prev) => prev + "000");
+    } else if (["+", "-", "*", "/"].includes(val)) {
+      // Jangan biarkan operator di awal atau double operator
+      if (amount === "" || /[+\-*/]$/.test(amount)) return;
+      setAmount((prev) => prev + val);
+    } else if (val === "=") {
+      calculateResult();
     } else {
       // Mencegah double nol di depan
       if (amount === "0" && val === "0") return;
@@ -84,13 +91,45 @@ export default function AddTransactionScreen() {
     }
   };
 
+  const calculateResult = () => {
+    try {
+      // Menggunakan Function constructor sebagai pengganti eval yang lebih aman
+      // Kita bersihkan string dari karakter berbahaya sebelum dihitung
+      const sanitizedExpression = amount.replace(/[^-()\d/*+.]/g, "");
+      const result = new Function(`return ${sanitizedExpression}`)();
+
+      // Pastikan hasil bukan negatif untuk transaksi (opsional tergantung kebutuhan)
+      setAmount(Math.max(0, Math.round(result)).toString());
+    } catch (e) {
+      Alert.alert("Format Salah", "Periksa kembali hitungan kamu.");
+    }
+  };
+
   const formatRibuan = (num: string) => {
     if (!num) return "0";
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // Pisahkan berdasarkan operator, format angkanya, lalu gabungkan lagi
+    return num
+      .split(/([+\-*/])/)
+      .map((part) => {
+        if (["+", "-", "*", "/"].includes(part)) return ` ${part} `;
+        return part.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      })
+      .join("");
   };
 
   const handleSave = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    // Hitung hasil akhir jika masih berupa rumus
+    let finalAmount = amount;
+    if (/[+\-*/]/.test(amount)) {
+      try {
+        finalAmount = new Function(`return ${amount}`)().toString();
+      } catch (e) {
+        Alert.alert("Error", "Hitungan belum selesai atau format salah.");
+        return;
+      }
+    }
+
+    if (!finalAmount || parseFloat(finalAmount) <= 0) {
       Alert.alert("Error", "Masukkan nominal yang valid");
       return;
     }
@@ -266,30 +305,66 @@ export default function AddTransactionScreen() {
         </View>
       </ScrollView>
 
-      {/* KEYPAD */}
-      <View style={keypadStyles.container}>
-        {[
-          ["1", "2", "3"],
-          ["4", "5", "6"],
-          ["7", "8", "9"],
-          ["000", "0", "DEL"],
-        ].map((row, i) => (
-          <View key={i} style={keypadStyles.row}>
-            {row.map((k) => (
-              <TouchableOpacity
-                key={k}
-                style={keypadStyles.key}
-                onPress={() => handleKeyPress(k)}
+      {/* LAYOUT BARU: 4 Kolom Angka + 1 Kolom Operator */}
+      <View style={[keypadStyles.container, { flexDirection: "row" }]}>
+        {/* Bagian Angka (75% Lebar) */}
+        <View style={{ flex: 3 }}>
+          {[
+            ["1", "2", "3"],
+            ["4", "5", "6"],
+            ["7", "8", "9"],
+            ["000", "0", "DEL"],
+          ].map((row, i) => (
+            <View key={i} style={keypadStyles.row}>
+              {row.map((k) => (
+                <TouchableOpacity
+                  key={k}
+                  style={[keypadStyles.key, { width: "30%" }]}
+                  onPress={() => handleKeyPress(k)}
+                >
+                  {k === "DEL" ? (
+                    <X size={22} color="#e74c3c" />
+                  ) : (
+                    <Text style={keypadStyles.keyText}>{k}</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
+
+        {/* Bagian Operator (25% Lebar) */}
+        <View
+          style={{
+            flex: 1,
+            borderLeftWidth: 1,
+            borderLeftColor: "#EEE",
+            paddingLeft: 5,
+          }}
+        >
+          {["/", "*", "-", "+", "="].map((op) => (
+            <TouchableOpacity
+              key={op}
+              style={[
+                keypadStyles.key,
+                {
+                  width: "100%",
+                  backgroundColor: op === "=" ? "#2ecc71" : "transparent",
+                },
+              ]}
+              onPress={() => handleKeyPress(op)}
+            >
+              <Text
+                style={[
+                  keypadStyles.keyText,
+                  { color: op === "=" ? "#FFF" : "#2ecc71" },
+                ]}
               >
-                {k === "DEL" ? (
-                  <X size={24} color="#e74c3c" />
-                ) : (
-                  <Text style={keypadStyles.keyText}>{k}</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
+                {op}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* MODAL PICKER (Reuse for Category & Wallet) */}

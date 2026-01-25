@@ -8,7 +8,7 @@ import {
   Settings,
   ShieldCheck,
   Tag,
-  Wallet
+  Wallet,
 } from "lucide-react-native";
 import React from "react";
 import {
@@ -103,18 +103,18 @@ export default function AccountScreen() {
         <Text style={styles.sectionLabel}>Manajemen Data</Text>
         <View style={styles.card}>
           <MenuItem
-            icon={Tag}
-            title="Kelola Kategori"
-            color="#2ecc71"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
-          <MenuItem
             icon={Wallet}
             title="Daftar Dompet"
             subtitle="Tambah atau edit rekening & cash"
             color="#3498db"
             onPress={() => router.push("../wallets")}
+          />
+          <View style={styles.divider} />
+          <MenuItem
+            icon={Tag}
+            title="Kelola Kategori"
+            color="#2ecc71"
+            onPress={() => {}}
           />
         </View>
       </View>

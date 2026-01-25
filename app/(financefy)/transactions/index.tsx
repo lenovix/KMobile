@@ -1,21 +1,37 @@
 import { Picker } from "@react-native-picker/picker";
 import { useIsFocused } from "@react-navigation/native";
-import { Inbox, Wallet } from "lucide-react-native";
+import { Inbox } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { FlatList, Text, View } from "react-native";
 import { db } from "../../services/database";
 import { styles } from "./styles";
 
 export default function TransactionsScreen() {
-  const isFocused = useIsFocused(); // Re-fetch saat kembali ke tab ini
+  const isFocused = useIsFocused();
   const [selectedWallet, setSelectedWallet] = useState("all");
   const [groupedTransactions, setGroupedTransactions] = useState<any[]>([]);
 
+  // State baru untuk menyimpan daftar dompet dari database
+  const [wallets, setWallets] = useState<any[]>([]);
+
   useEffect(() => {
     if (isFocused) {
+      fetchWallets(); // Ambil daftar dompet terbaru
       fetchTransactions();
     }
   }, [isFocused, selectedWallet]);
+
+  // Fungsi untuk mengambil data dompet
+  const fetchWallets = async () => {
+    try {
+      const result: any[] = await db.getAllAsync(
+        "SELECT * FROM wallets ORDER BY name ASC",
+      );
+      setWallets(result);
+    } catch (error) {
+      console.error("Error fetching wallets:", error);
+    }
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -29,7 +45,6 @@ export default function TransactionsScreen() {
 
       const result: any[] = await db.getAllAsync(query, params);
 
-      // LOGIKA GROUPING: Mengelompokkan data berdasarkan tanggal YYYY-MM-DD
       const groups = result.reduce((acc: any, item: any) => {
         const dateObj = new Date(item.date);
         const dateString = dateObj.toISOString().split("T")[0];
@@ -42,7 +57,6 @@ export default function TransactionsScreen() {
         return acc;
       }, {});
 
-      // Ubah objek ke array agar bisa di-render FlatList
       const formattedData = Object.keys(groups).map((dateKey) => ({
         id: dateKey,
         ...groups[dateKey],
@@ -74,7 +88,7 @@ export default function TransactionsScreen() {
         <Text
           style={[
             styles.dayTotal,
-            { color: item.total >= 0 ? "#2ecc71" : "#1A1A1A" },
+            { color: item.total >= 0 ? "#2ecc71" : "#e74c3c" },
           ]}
         >
           {item.total >= 0
@@ -113,15 +127,22 @@ export default function TransactionsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.pickerContainer}>
-          <Wallet size={18} color="#1A1A1A" style={{ marginRight: 8 }} />
+          {/* <Wallet size={18} color="#1A1A1A" style={{ marginRight: 8 }} /> */}
           <Picker
             selectedValue={selectedWallet}
             style={styles.picker}
             onValueChange={(val) => setSelectedWallet(val)}
           >
             <Picker.Item label="Semua Dompet" value="all" />
-            <Picker.Item label="Cash" value="Cash" />
-            <Picker.Item label="Bank BCA" value="Bank BCA" />
+
+            {/* Loop data dompet dari database */}
+            {wallets.map((wallet) => (
+              <Picker.Item
+                key={wallet.id}
+                label={`${wallet.icon} ${wallet.name}`}
+                value={wallet.name}
+              />
+            ))}
           </Picker>
         </View>
       </View>
