@@ -6,6 +6,15 @@ export const db = SQLite.openDatabaseSync("financefy.db");
 export const initDatabase = async () => {
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
+    
+    CREATE TABLE IF NOT EXISTS wallets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      icon TEXT NOT NULL,
+      balance REAL DEFAULT 0,
+      type TEXT NOT NULL -- 'bank' atau 'cash'
+    );
+    
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT NOT NULL,           -- expense, income, debt

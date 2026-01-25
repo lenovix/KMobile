@@ -23,7 +23,7 @@ export default function FinancefyLayout() {
         }}
       />
       <Tabs.Screen
-        name="transactions"
+        name="transactions/index"
         options={{
           title: "Transaksi",
           tabBarIcon: ({ color }) => <History size={22} color={color} />,
@@ -61,7 +61,7 @@ export default function FinancefyLayout() {
         }}
       />
       <Tabs.Screen
-        name="account"
+        name="account/index"
         options={{
           title: "Akun",
           tabBarIcon: ({ color }) => <User size={22} color={color} />,

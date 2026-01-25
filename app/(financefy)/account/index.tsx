@@ -1,25 +1,61 @@
+import { useRouter } from "expo-router";
 import {
-    Bell,
-    ChevronRight,
-    HelpCircle,
-    LogOut,
-    Settings,
-    ShieldCheck,
-    Tag,
-    Wallet
+  Bell,
+  ChevronRight,
+  HelpCircle,
+  LogOut, // Tambahkan icon trash
+  RefreshCw,
+  Settings,
+  ShieldCheck,
+  Tag,
+  Wallet
 } from "lucide-react-native";
 import React from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { db } from "../../services/database"; // Pastikan path import benar
+import { styles } from "./styles";
 
 export default function AccountScreen() {
-  // Komponen Menu Item agar kode lebih rapi (DRY - Don't Repeat Yourself)
+  const router = useRouter();
+
+  // Fungsi Reset Database
+  const resetDatabase = () => {
+    Alert.alert(
+      "Developer Mode",
+      "Hapus semua tabel? Ini akan menghapus seluruh data transaksi dan dompet untuk memperbarui skema database.",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Ya, Hapus Semua",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Menghapus tabel agar initDatabase di layout membuat ulang dengan kolom baru
+              await db.execAsync(`
+                DROP TABLE IF EXISTS transactions;
+                DROP TABLE IF EXISTS wallets;
+              `);
+              Alert.alert(
+                "Berhasil",
+                "Tabel dihapus. Silakan restart aplikasi (atau reload) untuk membuat ulang skema baru.",
+              );
+            } catch (err) {
+              Alert.alert("Error", "Gagal menghapus tabel");
+              console.error(err);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const MenuItem = ({
     icon: Icon,
     title,
@@ -40,7 +76,7 @@ export default function AccountScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container}>
       {/* 1. Profile Header */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
@@ -69,9 +105,8 @@ export default function AccountScreen() {
           <MenuItem
             icon={Tag}
             title="Kelola Kategori"
-            subtitle="Atur kategori pengeluaran & pemasukan"
             color="#2ecc71"
-            onPress={() => console.log("Navigasi ke halaman Kategori")}
+            onPress={() => {}}
           />
           <View style={styles.divider} />
           <MenuItem
@@ -79,12 +114,26 @@ export default function AccountScreen() {
             title="Daftar Dompet"
             subtitle="Tambah atau edit rekening & cash"
             color="#3498db"
-            onPress={() => console.log("Navigasi ke halaman Dompet")}
+            onPress={() => router.push("../wallets")}
           />
         </View>
       </View>
 
-      {/* 3. App Settings */}
+      {/* 3. Developer Tools (Baru) */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Developer Tools</Text>
+        <View style={styles.card}>
+          <MenuItem
+            icon={RefreshCw}
+            title="Reset Database Schema"
+            subtitle="Hapus semua tabel & buat ulang"
+            color="#e74c3c"
+            onPress={resetDatabase}
+          />
+        </View>
+      </View>
+
+      {/* 4. App Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Aplikasi</Text>
         <View style={styles.card}>
@@ -104,7 +153,7 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      {/* 4. Logout */}
+      {/* 5. Logout */}
       <TouchableOpacity style={styles.logoutBtn}>
         <LogOut size={20} color="#e74c3c" />
         <Text style={styles.logoutText}>Keluar Aplikasi</Text>
@@ -114,99 +163,7 @@ export default function AccountScreen() {
         <Text style={styles.versionText}>K-Mobile v1.0.0</Text>
         <Text style={styles.versionText}>Made for Great IT Future</Text>
       </View>
-
-      <View style={{ height: 100 }} />
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f9fa" },
-  profileHeader: {
-    alignItems: "center",
-    paddingVertical: 40,
-    backgroundColor: "#fff",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 2,
-  },
-  avatarContainer: { position: "relative" },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 4,
-    borderColor: "#f1f2f6",
-  },
-  editBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#2ecc71",
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: "#fff",
-  },
-  userName: { fontSize: 22, fontWeight: "bold", color: "#333", marginTop: 15 },
-  userEmail: { fontSize: 14, color: "#999", marginTop: 4 },
-  premiumBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#333",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 15,
-    gap: 6,
-  },
-  premiumText: { color: "#f1c40f", fontSize: 12, fontWeight: "bold" },
-  section: { marginTop: 25, paddingHorizontal: 20 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#999",
-    marginBottom: 10,
-    marginLeft: 5,
-    textTransform: "uppercase",
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    overflow: "hidden",
-    elevation: 1,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-  },
-  iconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  menuText: { flex: 1 },
-  menuTitle: { fontSize: 16, fontWeight: "600", color: "#333" },
-  menuSubtitle: { fontSize: 12, color: "#999", marginTop: 2 },
-  divider: { height: 1, backgroundColor: "#f1f1f1", marginHorizontal: 15 },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 40,
-    padding: 15,
-    marginHorizontal: 20,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#ff7675",
-    gap: 10,
-  },
-  logoutText: { color: "#e74c3c", fontWeight: "bold", fontSize: 16 },
-  footer: { alignItems: "center", marginTop: 30 },
-  versionText: { fontSize: 11, color: "#ccc" },
-});
