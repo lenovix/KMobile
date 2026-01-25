@@ -1,18 +1,73 @@
+// C:\Users\ichkm\Documents\KMobile\app\(financefy)\home\index.tsx
+import { useIsFocused } from "@react-navigation/native";
 import {
-    ArrowDownCircle,
-    ArrowUpCircle,
-    ChevronRight,
-    Eye,
-    EyeOff,
-    Wallet,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Wallet,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { styles } from "./styles"; // Import style dari file sebelah
+import { db } from "../../services/database";
+import { styles } from "./styles";
 
 export default function HomeScreen() {
+  const isFocused = useIsFocused();
   const [showBalance, setShowBalance] = useState(true);
+
+  // --- DATABASE STATES ---
+  const [summary, setSummary] = useState({
+    totalBalance: 0,
+    income: 0,
+    expense: 0,
+  });
+
+  useEffect(() => {
+    if (isFocused) {
+      loadHomeData();
+    }
+  }, [isFocused]);
+
+  const loadHomeData = async () => {
+    try {
+      // 1. Hitung Total Saldo dari semua Wallet
+      const walletRes: any = await db.getFirstAsync(
+        "SELECT SUM(balance) as total FROM wallets",
+      );
+
+      // 2. Hitung Total Pemasukan & Pengeluaran (Bulan Ini)
+      // Tip IT Junior: Kita pakai strftime untuk filter bulan berjalan
+      const statsRes: any[] = await db.getAllAsync(`
+        SELECT type, SUM(amount) as total 
+        FROM transactions 
+        WHERE strftime('%m', date) = strftime('%m', 'now')
+        AND exclude_from_report = 0
+        GROUP BY type
+      `);
+
+      let income = 0;
+      let expense = 0;
+      statsRes.forEach((row) => {
+        if (row.type === "income") income = row.total;
+        if (row.type === "expense") expense = row.total;
+      });
+
+      setSummary({
+        totalBalance: walletRes?.total || 0,
+        income: income,
+        expense: expense,
+      });
+    } catch (error) {
+      console.error("Gagal memuat data home:", error);
+    }
+  };
+
+  const formatCurrency = (val: number) => {
+    return "Rp " + val.toLocaleString("id-ID");
+  };
 
   const lineData = [
     { value: 15, label: "Sen" },
@@ -32,7 +87,9 @@ export default function HomeScreen() {
             <View>
               <Text style={styles.balanceTitle}>Total Saldo Tersedia</Text>
               <Text style={styles.balanceAmount}>
-                {showBalance ? "Rp 15.250.000" : "••••••••"}
+                {showBalance
+                  ? formatCurrency(summary.totalBalance)
+                  : "••••••••"}
               </Text>
             </View>
             <TouchableOpacity
@@ -40,9 +97,9 @@ export default function HomeScreen() {
               style={styles.eyeBtn}
             >
               {showBalance ? (
-                <EyeOff color="#2ecc71" size={24} />
+                <EyeOff color="#2ecc71" size={22} />
               ) : (
-                <Eye color="#2ecc71" size={24} />
+                <Eye color="#2ecc71" size={22} />
               )}
             </TouchableOpacity>
           </View>
@@ -54,7 +111,9 @@ export default function HomeScreen() {
               </View>
               <View style={{ marginLeft: 12 }}>
                 <Text style={styles.reportLabel}>Pemasukan</Text>
-                <Text style={styles.reportValue}>Rp 20.000k</Text>
+                <Text style={[styles.reportValue, { color: "#2ecc71" }]}>
+                  {formatCurrency(summary.income)}
+                </Text>
               </View>
             </View>
             <View style={styles.reportDivider} />
@@ -64,7 +123,9 @@ export default function HomeScreen() {
               </View>
               <View style={{ marginLeft: 12 }}>
                 <Text style={styles.reportLabel}>Pengeluaran</Text>
-                <Text style={styles.reportValue}>Rp 4.750k</Text>
+                <Text style={[styles.reportValue, { color: "#e74c3c" }]}>
+                  {formatCurrency(summary.expense)}
+                </Text>
               </View>
             </View>
           </View>
@@ -72,7 +133,7 @@ export default function HomeScreen() {
 
         <View style={styles.content}>
           {/* 2. Wallet List */}
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeaderChart}>
             <Text style={styles.sectionTitle}>Portofolio Dompet</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>Lihat Semua</Text>
@@ -142,7 +203,7 @@ export default function HomeScreen() {
           </View>
 
           {/* 4. Transaksi Terakhir */}
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeaderChart}>
             <Text style={styles.sectionTitle}>Riwayat Terkini</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>Detail</Text>
