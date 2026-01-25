@@ -1,16 +1,8 @@
 import { useRouter } from "expo-router";
 import { Wallet } from "lucide-react-native";
-import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function LauncherScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const apps = [
@@ -26,7 +18,7 @@ export default function LauncherScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={styles.container}>
       {/* Bagian Header agar tetap di atas */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>K-Mobile</Text>
@@ -55,7 +47,7 @@ export default function LauncherScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>IT Junior Project v1.0</Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
