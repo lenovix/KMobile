@@ -32,40 +32,53 @@ export default function HomeScreen() {
 
   const loadHomeData = async () => {
     try {
-      const walletRes: any = await db.getFirstAsync(
-        "SELECT SUM(balance) as total FROM wallets",
-      );
-
-      const allWallets: any[] = await db.getAllAsync("SELECT * FROM wallets");
-      setWallets(allWallets);
-
-      const statsRes: any[] = await db.getAllAsync(`
-      SELECT type, SUM(amount) as total 
-      FROM transactions 
-      WHERE strftime('%m', date) = strftime('%m', 'now')
-      AND exclude_from_report = 0
-      GROUP BY type
-    `);
-
-      const transRes: any[] = await db.getAllAsync(`
-      SELECT * FROM transactions 
-      ORDER BY date DESC 
-      LIMIT 5
-    `);
-      setRecentTransactions(transRes);
+      let totalBal = 0;
+      let listWallets: any[] = [];
+      try {
+        const walletRes: any = await db.getFirstAsync("SELECT SUM(balance) as total FROM wallets");
+        totalBal = walletRes?.total || 0;
+        listWallets = await db.getAllAsync("SELECT * FROM wallets");
+      } catch (e) {
+        console.log("Tabel wallets belum siap, menampilkan saldo 0");
+      }
+      setWallets(listWallets);
 
       let income = 0;
       let expense = 0;
-      statsRes.forEach((row) => {
-        if (row.type === "income") income = row.total;
-        if (row.type === "expense") expense = row.total;
-      });
+      try {
+        const statsRes: any[] = await db.getAllAsync(`
+        SELECT type, SUM(amount) as total 
+        FROM transactions 
+        WHERE strftime('%m', date) = strftime('%m', 'now')
+        AND exclude_from_report = 0
+        GROUP BY type
+      `);
+        statsRes.forEach((row) => {
+          if (row.type === "income") income = row.total;
+          if (row.type === "expense") expense = row.total;
+        });
+      } catch (e) {
+        console.log("Tabel transactions belum siap untuk stats");
+      }
+
+      let recentTrans: any[] = [];
+      try {
+        recentTrans = await db.getAllAsync(`
+        SELECT * FROM transactions 
+        ORDER BY date DESC 
+        LIMIT 5
+      `);
+      } catch (e) {
+        console.log("Tabel transactions belum siap untuk recent list");
+      }
+      setRecentTransactions(recentTrans);
 
       setSummary({
-        totalBalance: walletRes?.total || 0,
+        totalBalance: totalBal,
         income: income,
         expense: expense,
       });
+
     } catch (error) {
       console.error("Gagal memuat data home:", error);
     }
@@ -73,6 +86,15 @@ export default function HomeScreen() {
 
   const formatCurrency = (val: number) => {
     return "Rp " + val.toLocaleString("id-ID");
+  };
+
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
@@ -157,7 +179,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <TouchableOpacity style={[styles.walletCard, { borderStyle: 'dashed', borderWidth: 1, borderColor: '#555' }]}>
+              <TouchableOpacity style={[styles.walletCard, { borderStyle: 'dashed', borderWidth: 1, borderColor: '#555', justifyContent: 'center', alignItems: 'center' }]} onPress={() => router.push("../wallets")}>
                 <Text style={{ color: '#888' }}>+ Tambah Dompet</Text>
               </TouchableOpacity>
             )}
@@ -173,28 +195,45 @@ export default function HomeScreen() {
           {recentTransactions.length > 0 ? (
             recentTransactions.map((item) => (
               <View key={item.id} style={styles.transCard}>
-                <View style={styles.transIcon}>
+                <View style={[
+                  styles.transIcon,
+                  { backgroundColor: item.type === "income" ? "#e8f8f0" : "#fdf2f2" }
+                ]}>
                   <Text style={{ fontSize: 18 }}>{item.category_icon || "💸"}</Text>
                 </View>
+
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{item.note || item.category_name}</Text>
+                  <Text numberOfLines={1} style={styles.itemTitle}>
+                    {item.note || item.category_name}
+                  </Text>
                   <Text style={styles.itemSub}>
-                    {item.wallet_name} • {item.date}
+                    {item.wallet_name} • {formatDate(item.date)}
                   </Text>
                 </View>
-                <Text
-                  style={[
-                    styles.itemAmount,
-                    { color: item.type === "income" ? "#2ecc71" : "#e74c3c" }
-                  ]}
-                >
-                  {item.type === "income" ? "+" : "-"} {formatCurrency(item.amount)}
-                </Text>
+
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text
+                    style={[
+                      styles.itemAmount,
+                      { color: item.type === "income" ? "#2ecc71" : "#e74c3c" }
+                    ]}
+                  >
+                    {item.type === "income" ? "+" : "-"} {formatCurrency(item.amount)}
+                  </Text>
+                  {item.exclude_from_report === 1 && (
+                    <Text style={{ fontSize: 8, color: '#999', fontStyle: 'italic' }}>
+                      Abaikan
+                    </Text>
+                  )}
+                </View>
               </View>
             ))
           ) : (
-            <View style={{ alignItems: 'center', padding: 20 }}>
-              <Text style={{ color: '#666' }}>Belum ada transaksi</Text>
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyCircle}>
+                <Text style={{ fontSize: 30 }}>📁</Text>
+              </View>
+              <Text style={styles.emptyText}>Belum ada transaksi bulan ini</Text>
             </View>
           )}
           <View style={{ height: 100 }} />

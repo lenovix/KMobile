@@ -31,8 +31,9 @@ export default function AccountScreen() {
           onPress: async () => {
             try {
               await db.execAsync(`
-                DROP TABLE IF EXISTS transactions;
                 DROP TABLE IF EXISTS wallets;
+                DROP TABLE IF EXISTS transactions;
+                DROP TABLE IF EXISTS categories;
               `);
               Alert.alert(
                 "Berhasil",

@@ -1,15 +1,13 @@
-// C:\Users\ichkm\Documents\KMobile\app\(financefy)\home\styles.ts
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" }, // Abu-abu sangat muda
+  container: { flex: 1, backgroundColor: "#F8F9FA" },
   header: {
     backgroundColor: "#FFFFFF",
     padding: 25,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     paddingBottom: 35,
-    // Shadow untuk efek elegant
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.05,
@@ -29,7 +27,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   balanceAmount: {
-    color: "#2C3E50", // Biru gelap elegan
+    color: "#2C3E50",
     fontSize: 32,
     fontWeight: "800",
     marginTop: 5,
@@ -101,27 +99,36 @@ export const styles = StyleSheet.create({
   },
   walletScroll: { flexDirection: "row" },
   transCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    padding: 15,
-    borderRadius: 18,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#F1F2F6",
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    marginBottom: 8,
   },
   transIcon: {
     width: 45,
     height: 45,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  itemTitle: { fontWeight: "600", color: "#2C3E50", fontSize: 15 },
-  itemSub: { color: "#BDC3C7", fontSize: 12, marginTop: 2 },
-  itemAmount: { fontWeight: "700", fontSize: 15 },
+  itemTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 2,
+  },
+  itemSub: {
+    fontSize: 12,
+    color: '#999',
+  },
+  itemAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
   chartCard: {
     backgroundColor: "#161616",
     padding: 20,
@@ -134,4 +141,22 @@ export const styles = StyleSheet.create({
     marginTop: 15,
     alignItems: "center",
   },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyText: {
+    color: '#A1A1A1',
+    fontSize: 14,
+  }
 });
