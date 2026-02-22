@@ -11,25 +11,24 @@ export default function TransactionsScreen() {
   const [selectedWallet, setSelectedWallet] = useState("all");
   const [groupedTransactions, setGroupedTransactions] = useState<any[]>([]);
 
-  // State baru untuk menyimpan daftar dompet dari database
   const [wallets, setWallets] = useState<any[]>([]);
 
   useEffect(() => {
     if (isFocused) {
-      fetchWallets(); // Ambil daftar dompet terbaru
+      fetchWallets();
       fetchTransactions();
     }
   }, [isFocused, selectedWallet]);
 
-  // Fungsi untuk mengambil data dompet
   const fetchWallets = async () => {
     try {
       const result: any[] = await db.getAllAsync(
         "SELECT * FROM wallets ORDER BY name ASC",
       );
-      setWallets(result);
+      setWallets(result || []);
     } catch (error) {
-      console.error("Error fetching wallets:", error);
+      console.log("Database wallets belum siap.");
+      setWallets([]);
     }
   };
 
@@ -45,15 +44,20 @@ export default function TransactionsScreen() {
 
       const result: any[] = await db.getAllAsync(query, params);
 
+      if (!result || result.length === 0) {
+        setGroupedTransactions([]);
+        return;
+      }
+
       const groups = result.reduce((acc: any, item: any) => {
-        const dateObj = new Date(item.date);
-        const dateString = dateObj.toISOString().split("T")[0];
-        if (!acc[dateString])
-          acc[dateString] = { date: dateObj, items: [], total: 0 };
+        const dateString = item.date.substring(0, 10);
+
+        if (!acc[dateString]) {
+          acc[dateString] = { date: new Date(item.date), items: [], total: 0 };
+        }
 
         acc[dateString].items.push(item);
-        acc[dateString].total +=
-          item.type === "expense" ? -item.amount : item.amount;
+        acc[dateString].total += item.type === "expense" ? -item.amount : item.amount;
         return acc;
       }, {});
 
@@ -64,7 +68,8 @@ export default function TransactionsScreen() {
 
       setGroupedTransactions(formattedData);
     } catch (error) {
-      console.error("Error fetching transactions:", error);
+      console.log("Database transactions belum siap.");
+      setGroupedTransactions([]);
     }
   };
 
@@ -127,7 +132,6 @@ export default function TransactionsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.pickerContainer}>
-          {/* <Wallet size={18} color="#1A1A1A" style={{ marginRight: 8 }} /> */}
           <Picker
             selectedValue={selectedWallet}
             style={styles.picker}
@@ -135,7 +139,6 @@ export default function TransactionsScreen() {
           >
             <Picker.Item label="Semua Dompet" value="all" />
 
-            {/* Loop data dompet dari database */}
             {wallets.map((wallet) => (
               <Picker.Item
                 key={wallet.id}

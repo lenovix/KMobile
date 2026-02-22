@@ -24,7 +24,7 @@ import { keypadStyles, styles } from "./styles";
 export default function AddTransactionScreen() {
   const router = useRouter();
 
-  const [isKeypadVisible, setIsKeypadVisible] = useState(true);
+  const [isKeypadVisible, setIsKeypadVisible] = useState(false);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
@@ -53,9 +53,10 @@ export default function AddTransactionScreen() {
   const loadCategories = async () => {
     try {
       const result: any[] = await db.getAllAsync("SELECT * FROM categories");
-      setDbCategories(result);
+      setDbCategories(result || []);
     } catch (error) {
-      console.error("Gagal ambil kategori:", error);
+      console.log("Tabel categories belum siap.");
+      setDbCategories([]);
     }
   };
 
@@ -73,10 +74,13 @@ export default function AddTransactionScreen() {
   const loadWallets = async () => {
     try {
       const result: any[] = await db.getAllAsync("SELECT * FROM wallets");
-      setDbWallets(result);
-      if (result.length > 0) setSelectedWallet(result[0]);
+      setDbWallets(result || []);
+      if (result && result.length > 0) {
+        setSelectedWallet((prev: any) => prev ?? result[0]);
+      }
     } catch (error) {
-      console.error("Gagal ambil wallet:", error);
+      console.log("Tabel wallets belum siap.");
+      setDbWallets([]);
     }
   };
 
@@ -122,17 +126,16 @@ export default function AddTransactionScreen() {
   };
 
   const handleSave = async () => {
-    let finalAmount = amount;
-    if (/[+\-*/]/.test(amount)) {
-      try {
-        finalAmount = new Function(`return ${amount}`)().toString();
-      } catch (e) {
-        Alert.alert("Error", "Hitungan belum selesai atau format salah.");
-        return;
-      }
+    let calculatedAmount = 0;
+    try {
+      const sanitized = amount.replace(/[^-()\d/*+.]/g, "");
+      calculatedAmount = parseFloat(new Function(`return ${sanitized}`)());
+    } catch (e) {
+      Alert.alert("Error", "Format hitungan salah.");
+      return;
     }
 
-    if (!finalAmount || parseFloat(finalAmount) <= 0) {
+    if (!calculatedAmount || calculatedAmount <= 0) {
       Alert.alert("Error", "Masukkan nominal yang valid");
       return;
     }
@@ -142,12 +145,14 @@ export default function AddTransactionScreen() {
     }
 
     try {
+      const balanceChange = type === "expense" ? -calculatedAmount : calculatedAmount;
+
       await db.runAsync(
         `INSERT INTO transactions (type, amount, wallet_name, wallet_icon, category_name, category_icon, note, date, exclude_from_report) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           type,
-          parseFloat(amount),
+          calculatedAmount,
           selectedWallet.name,
           selectedWallet.icon,
           selectedCategory.name,
@@ -158,8 +163,6 @@ export default function AddTransactionScreen() {
         ],
       );
 
-      const balanceChange =
-        type === "expense" ? -parseFloat(amount) : parseFloat(amount);
       await db.runAsync(
         "UPDATE wallets SET balance = balance + ? WHERE id = ?",
         [balanceChange, selectedWallet.id],
@@ -169,7 +172,8 @@ export default function AddTransactionScreen() {
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error) {
-      Alert.alert("Error", "Gagal menyimpan transaksi.");
+      console.error("Save error:", error);
+      Alert.alert("Error", "Gagal menyimpan transaksi. Pastikan database tersedia.");
     }
   };
 
