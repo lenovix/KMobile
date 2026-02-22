@@ -36,8 +36,8 @@ export default function WalletDetailScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <ChevronLeft color="#fff" size={28} />
+                <TouchableOpacity onPress={() => router.navigate("../")}>
+                    <ChevronLeft color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{wallet.name}</Text>
                 <View style={{ width: 28 }} />

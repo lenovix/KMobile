@@ -26,6 +26,24 @@ export const initDatabase = async () => {
       date TEXT NOT NULL,           -- Simpan sebagai ISO string
       exclude_from_report INTEGER   -- 0 untuk false, 1 untuk true
     );
+
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      icon TEXT NOT NULL,
+      type TEXT NOT NULL -- 'income' atau 'expense'
+    );
   `);
+
+  const count: any = await db.getFirstAsync("SELECT COUNT(*) as total FROM categories");
+  if (count.total === 0) {
+    await db.execAsync(`
+      INSERT INTO categories (name, icon, type) VALUES 
+      ('Makanan', '🍔', 'expense'),
+      ('Transport', '🚗', 'expense'),
+      ('Gaji', '💰', 'income'),
+      ('Investasi', '📈', 'income');
+    `);
+  }
   console.log("Database Initialized");
 };

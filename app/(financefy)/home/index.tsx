@@ -3,18 +3,18 @@ import { useRouter } from "expo-router";
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  ChevronRight,
   Eye,
   EyeOff
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
 import { db } from "../../services/database";
 import { styles } from "./styles";
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
   const isFocused = useIsFocused();
   const [showBalance, setShowBalance] = useState(true);
@@ -47,6 +47,13 @@ export default function HomeScreen() {
       GROUP BY type
     `);
 
+      const transRes: any[] = await db.getAllAsync(`
+      SELECT * FROM transactions 
+      ORDER BY date DESC 
+      LIMIT 5
+    `);
+      setRecentTransactions(transRes);
+
       let income = 0;
       let expense = 0;
       statsRes.forEach((row) => {
@@ -68,20 +75,11 @@ export default function HomeScreen() {
     return "Rp " + val.toLocaleString("id-ID");
   };
 
-  const lineData = [
-    { value: 15, label: "Sen" },
-    { value: 30, label: "Sel" },
-    { value: 26, label: "Rab" },
-    { value: 40, label: "Kam" },
-    { value: 18, label: "Jum" },
-    { value: 35, label: "Sab" },
-  ];
-
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.greeting}>Selamat Malam, IT Junior! 👋</Text>
+          <Text style={styles.greeting}>Selamat Malam, Ichsanul Kamil Sudarmi! 👋</Text>
           <View style={styles.balanceContainer}>
             <View>
               <Text style={styles.balanceTitle}>Total Saldo Tersedia</Text>
@@ -133,7 +131,7 @@ export default function HomeScreen() {
         <View style={styles.content}>
           <View style={styles.sectionHeaderChart}>
             <Text style={styles.sectionTitle}>Portofolio Dompet</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/wallets")}>
               <Text style={styles.seeAll}>Lihat Semua</Text>
             </TouchableOpacity>
           </View>
@@ -165,55 +163,40 @@ export default function HomeScreen() {
             )}
           </ScrollView>
 
-          {/* 3. Laporan Mingguan - Dark Chart */}
-          <View style={styles.chartCard}>
-            <View style={styles.sectionHeaderChart}>
-              <Text style={styles.sectionTitle}>Analisis Mingguan</Text>
-              <ChevronRight color="#2ecc71" size={20} />
-            </View>
-            <View style={styles.chartWrapper}>
-              <LineChart
-                data={lineData}
-                height={120}
-                width={280}
-                initialSpacing={20}
-                color="#2ecc71"
-                thickness={3}
-                hideDataPoints
-                noOfSections={3}
-                yAxisTextStyle={{ color: "#555", fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: "#555", fontSize: 10 }}
-                rulesColor="#222"
-                yAxisColor="#222"
-                xAxisColor="#222"
-                areaChart
-                startFillColor="rgba(46, 204, 113, 0.2)"
-                endFillColor="rgba(46, 204, 113, 0.0)"
-              />
-            </View>
-          </View>
-
-          {/* 4. Transaksi Terakhir */}
           <View style={styles.sectionHeaderChart}>
             <Text style={styles.sectionTitle}>Riwayat Terkini</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(financefy)/transactions")}>
               <Text style={styles.seeAll}>Detail</Text>
             </TouchableOpacity>
           </View>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.transCard}>
-              <View style={styles.transIcon}>
-                <Text style={{ fontSize: 18 }}>💰</Text>
+
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((item) => (
+              <View key={item.id} style={styles.transCard}>
+                <View style={styles.transIcon}>
+                  <Text style={{ fontSize: 18 }}>{item.category_icon || "💸"}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemTitle}>{item.note || item.category_name}</Text>
+                  <Text style={styles.itemSub}>
+                    {item.wallet_name} • {item.date}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.itemAmount,
+                    { color: item.type === "income" ? "#2ecc71" : "#e74c3c" }
+                  ]}
+                >
+                  {item.type === "income" ? "+" : "-"} {formatCurrency(item.amount)}
+                </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemTitle}>Subscription Netflix</Text>
-                <Text style={styles.itemSub}>Entertainment • 25 Jan</Text>
-              </View>
-              <Text style={[styles.itemAmount, { color: "#e74c3c" }]}>
-                - Rp 189.000
-              </Text>
+            ))
+          ) : (
+            <View style={{ alignItems: 'center', padding: 20 }}>
+              <Text style={{ color: '#666' }}>Belum ada transaksi</Text>
             </View>
-          ))}
+          )}
           <View style={{ height: 100 }} />
         </View>
       </ScrollView>

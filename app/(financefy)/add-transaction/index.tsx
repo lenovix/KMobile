@@ -13,34 +13,25 @@ import {
   FlatList,
   Modal,
   ScrollView,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { db } from "../../services/database";
 import { keypadStyles, styles } from "./styles";
 
-const CATEGORIES = [
-  { id: "1", name: "Makanan", icon: "🍔", type: "expense" },
-  { id: "2", name: "Transportasi", icon: "🚗", type: "expense" },
-  { id: "3", name: "Gaji", icon: "💰", type: "income" },
-  { id: "4", name: "Hiburan", icon: "🎬", type: "expense" },
-  { id: "5", name: "Kesehatan", icon: "💊", type: "expense" },
-];
-
 export default function AddTransactionScreen() {
   const router = useRouter();
 
-  // --- STATES ---
+  const [isKeypadVisible, setIsKeypadVisible] = useState(true);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState(""); // Angka murni disimpan di sini
+  const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date());
   const [excludeFromReport, setExcludeFromReport] = useState(false);
 
-  // --- DATA STATES ---
   const [dbWallets, setDbWallets] = useState<any[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState({
@@ -48,7 +39,6 @@ export default function AddTransactionScreen() {
     icon: "✨",
   });
 
-  // --- UI STATES ---
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [modalVisible, setModalVisible] = useState<{
     show: boolean;
@@ -57,7 +47,28 @@ export default function AddTransactionScreen() {
 
   useEffect(() => {
     loadWallets();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const result: any[] = await db.getAllAsync("SELECT * FROM categories");
+      setDbCategories(result);
+    } catch (error) {
+      console.error("Gagal ambil kategori:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedCategory.name !== "Pilih Kategori") {
+      const isCompatible = dbCategories.find(
+        c => c.name === selectedCategory.name && c.type === type
+      );
+      if (!isCompatible) {
+        setSelectedCategory({ name: "Pilih Kategori", icon: "✨" });
+      }
+    }
+  }, [type]);
 
   const loadWallets = async () => {
     try {
@@ -69,7 +80,6 @@ export default function AddTransactionScreen() {
     }
   };
 
-  // --- LOGIC FUNCTIONS ---
   const handleKeyPress = (val: string) => {
     if (val === "DEL") {
       setAmount((prev) => prev.toString().slice(0, -1));
@@ -79,13 +89,11 @@ export default function AddTransactionScreen() {
       if (amount === "" || /[+\-*/]$/.test(amount)) return;
       setAmount((prev) => prev + "000");
     } else if (["+", "-", "*", "/"].includes(val)) {
-      // Jangan biarkan operator di awal atau double operator
       if (amount === "" || /[+\-*/]$/.test(amount)) return;
       setAmount((prev) => prev + val);
     } else if (val === "=") {
       calculateResult();
     } else {
-      // Mencegah double nol di depan
       if (amount === "0" && val === "0") return;
       setAmount((prev) => (prev === "0" ? val : prev + val));
     }
@@ -93,12 +101,9 @@ export default function AddTransactionScreen() {
 
   const calculateResult = () => {
     try {
-      // Menggunakan Function constructor sebagai pengganti eval yang lebih aman
-      // Kita bersihkan string dari karakter berbahaya sebelum dihitung
       const sanitizedExpression = amount.replace(/[^-()\d/*+.]/g, "");
       const result = new Function(`return ${sanitizedExpression}`)();
 
-      // Pastikan hasil bukan negatif untuk transaksi (opsional tergantung kebutuhan)
       setAmount(Math.max(0, Math.round(result)).toString());
     } catch (e) {
       Alert.alert("Format Salah", "Periksa kembali hitungan kamu.");
@@ -107,7 +112,6 @@ export default function AddTransactionScreen() {
 
   const formatRibuan = (num: string) => {
     if (!num) return "0";
-    // Pisahkan berdasarkan operator, format angkanya, lalu gabungkan lagi
     return num
       .split(/([+\-*/])/)
       .map((part) => {
@@ -118,7 +122,6 @@ export default function AddTransactionScreen() {
   };
 
   const handleSave = async () => {
-    // Hitung hasil akhir jika masih berupa rumus
     let finalAmount = amount;
     if (/[+\-*/]/.test(amount)) {
       try {
@@ -183,78 +186,79 @@ export default function AddTransactionScreen() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <X color="#1A1A1A" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaksi Baru</Text>
         <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.saveBtn}>Simpan</Text>
+          <Text style={[styles.saveBtn, { opacity: amount && amount !== "0" ? 1 : 0.5 }]}>Simpan</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-        {/* TYPE SELECTOR */}
+      <ScrollView
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => setIsKeypadVisible(false)}
+      >
         <View style={styles.typeSelector}>
           {["expense", "income"].map((t) => (
             <TouchableOpacity
               key={t}
               onPress={() => setType(t)}
-              style={[styles.typeBtn, type === t && styles.typeBtnActive]}
+              style={[styles.typeBtn, type === t && (t === "expense" ? { backgroundColor: '#ff4757' } : { backgroundColor: '#2ecc71' })]}
             >
-              <Text
-                style={[styles.typeLabel, type === t && styles.typeLabelActive]}
-              >
-                {t === "expense" ? "Keluar" : "Masuk"}
+              <Text style={[styles.typeLabel, type === t && { color: '#FFF' }]}>
+                {t === "expense" ? "Pengeluaran" : "Pemasukan"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* INPUT NOMINAL (Custom View, No TextInput) */}
-        <View style={styles.inputSection}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsKeypadVisible(true)}
+          style={[styles.inputSection, isKeypadVisible && { borderBottomWidth: 2, borderBottomColor: type === 'expense' ? '#ff4757' : '#2ecc71' }]}
+        >
           <Text style={styles.label}>Jumlah Nominal</Text>
           <View style={styles.amountInputRow}>
-            <Text style={styles.currency}>Rp</Text>
-            <Text
-              style={[
-                keypadStyles.amountText,
-                { color: amount ? "#1A1A1A" : "#CCC" },
-              ]}
-            >
+            <Text style={[styles.currency, { color: type === 'expense' ? '#ff4757' : '#2ecc71' }]}>Rp</Text>
+            <Text numberOfLines={1} style={[keypadStyles.amountText, { color: amount ? "#1A1A1A" : "#CCC" }]}>
               {formatRibuan(amount)}
             </Text>
+            {isKeypadVisible && <Check size={20} color="#2ecc71" onPress={() => setIsKeypadVisible(false)} />}
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* FORM ITEMS */}
         <View style={styles.formSection}>
           <TouchableOpacity
             style={styles.formItem}
-            onPress={() => openPicker("wallet")}
+            onPress={() => { setIsKeypadVisible(false); openPicker("wallet"); }}
+            activeOpacity={0.7}
           >
             <View style={styles.iconCircle}>
-              <Text style={{ fontSize: 18 }}>
-                {selectedWallet?.icon || "❓"}
-              </Text>
+              <Text style={{ fontSize: 18 }}>{selectedWallet?.icon || "❓"}</Text>
             </View>
+
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>Metode Pembayaran</Text>
+
               <Text style={styles.itemValue}>
                 {selectedWallet?.name || "Pilih Dompet"}
               </Text>
+
+              {selectedWallet && (
+                <Text style={styles.itemSubValue}>
+                  Saldo: Rp {selectedWallet.balance.toLocaleString("id-ID")}
+                </Text>
+              )}
             </View>
+
             <ChevronRight size={18} color="#D1D1D1" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.formItem}
-            onPress={() => openPicker("category")}
-          >
-            <View style={styles.iconCircle}>
-              <Text style={{ fontSize: 18 }}>{selectedCategory.icon}</Text>
-            </View>
+          <TouchableOpacity style={styles.formItem} onPress={() => { setIsKeypadVisible(false); openPicker("category"); }}>
+            <View style={styles.iconCircle}><Text style={{ fontSize: 18 }}>{selectedCategory.icon}</Text></View>
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>Kategori</Text>
               <Text style={styles.itemValue}>{selectedCategory.name}</Text>
@@ -263,111 +267,55 @@ export default function AddTransactionScreen() {
           </TouchableOpacity>
 
           <View style={styles.formItem}>
-            <View style={styles.iconCircle}>
-              <Notebook size={20} color="#1A1A1A" strokeWidth={1.5} />
-            </View>
+            <View style={styles.iconCircle}><Notebook size={20} color="#1A1A1A" strokeWidth={1.5} /></View>
             <TextInput
               style={[styles.itemContent, { fontSize: 15, color: "#1A1A1A" }]}
               placeholder="Tambahkan catatan..."
               value={note}
               onChangeText={setNote}
+              onFocus={() => setIsKeypadVisible(false)}
             />
           </View>
 
-          <TouchableOpacity
-            style={styles.formItem}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <View style={styles.iconCircle}>
-              <Calendar size={20} color="#1A1A1A" strokeWidth={1.5} />
-            </View>
+          <TouchableOpacity style={styles.formItem} onPress={() => { setIsKeypadVisible(false); setShowDatePicker(true); }}>
+            <View style={styles.iconCircle}><Calendar size={20} color="#1A1A1A" strokeWidth={1.5} /></View>
             <View style={styles.itemContent}>
-              <Text style={styles.itemLabel}>Tanggal Transaksi</Text>
-              <Text style={styles.itemValue}>
-                {date.toLocaleDateString("id-ID", { dateStyle: "long" })}
-              </Text>
+              <Text style={styles.itemLabel}>Tanggal</Text>
+              <Text style={styles.itemValue}>{date.toLocaleDateString("id-ID", { dateStyle: "long" })}</Text>
             </View>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.switchSection}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.switchTitle}>Abaikan Laporan</Text>
-            <Text style={styles.switchSub}>
-              Tidak masuk dalam kalkulasi budget.
-            </Text>
-          </View>
-          <Switch
-            value={excludeFromReport}
-            onValueChange={setExcludeFromReport}
-            trackColor={{ false: "#EEEEEE", true: "#2ecc71" }}
-          />
-        </View>
       </ScrollView>
 
-      {/* LAYOUT BARU: 4 Kolom Angka + 1 Kolom Operator */}
-      <View style={[keypadStyles.container, { flexDirection: "row" }]}>
-        {/* Bagian Angka (75% Lebar) */}
-        <View style={{ flex: 3 }}>
-          {[
-            ["1", "2", "3"],
-            ["4", "5", "6"],
-            ["7", "8", "9"],
-            ["000", "0", "DEL"],
-          ].map((row, i) => (
-            <View key={i} style={keypadStyles.row}>
-              {row.map((k) => (
+      {isKeypadVisible && (
+        <View style={[keypadStyles.container, { borderTopLeftRadius: 20, borderTopRightRadius: 20, elevation: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 1000 }]}>
+          <View style={{ flexDirection: "row" }}>
+            <View style={{ flex: 3 }}>
+              {[["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["000", "0", "DEL"]].map((row, i) => (
+                <View key={i} style={keypadStyles.row}>
+                  {row.map((k) => (
+                    <TouchableOpacity key={k} style={[keypadStyles.key, { width: "30%" }]} onPress={() => handleKeyPress(k)}>
+                      {k === "DEL" ? <X size={22} color="#e74c3c" /> : <Text style={keypadStyles.keyText}>{k}</Text>}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </View>
+            <View style={{ flex: 1, borderLeftWidth: 1, borderLeftColor: "#EEE" }}>
+              {["/", "*", "-", "+", "="].map((op) => (
                 <TouchableOpacity
-                  key={k}
-                  style={[keypadStyles.key, { width: "30%" }]}
-                  onPress={() => handleKeyPress(k)}
+                  key={op}
+                  style={[keypadStyles.key, { width: "100%", backgroundColor: op === "=" ? "#2ecc71" : "transparent" }]}
+                  onPress={() => handleKeyPress(op)}
                 >
-                  {k === "DEL" ? (
-                    <X size={22} color="#e74c3c" />
-                  ) : (
-                    <Text style={keypadStyles.keyText}>{k}</Text>
-                  )}
+                  <Text style={[keypadStyles.keyText, { color: op === "=" ? "#FFF" : "#2ecc71" }]}>{op}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-          ))}
+          </View>
         </View>
+      )}
 
-        {/* Bagian Operator (25% Lebar) */}
-        <View
-          style={{
-            flex: 1,
-            borderLeftWidth: 1,
-            borderLeftColor: "#EEE",
-            paddingLeft: 5,
-          }}
-        >
-          {["/", "*", "-", "+", "="].map((op) => (
-            <TouchableOpacity
-              key={op}
-              style={[
-                keypadStyles.key,
-                {
-                  width: "100%",
-                  backgroundColor: op === "=" ? "#2ecc71" : "transparent",
-                },
-              ]}
-              onPress={() => handleKeyPress(op)}
-            >
-              <Text
-                style={[
-                  keypadStyles.keyText,
-                  { color: op === "=" ? "#FFF" : "#2ecc71" },
-                ]}
-              >
-                {op}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* MODAL PICKER (Reuse for Category & Wallet) */}
       <Modal visible={modalVisible.show} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -387,16 +335,15 @@ export default function AddTransactionScreen() {
               data={
                 modalVisible.type === "wallet"
                   ? dbWallets
-                  : CATEGORIES.filter((c) => c.type === type)
+                  : dbCategories.filter((c) => c.type === type)
               }
-              keyExtractor={(item, index) =>
-                item.id?.toString() || index.toString()
-              }
+              keyExtractor={(item, index) => item.id?.toString() || index.toString()}
               renderItem={({ item }) => {
                 const isSelected =
                   modalVisible.type === "wallet"
                     ? selectedWallet?.id === item.id
                     : selectedCategory.name === item.name;
+
                 return (
                   <TouchableOpacity
                     style={[
@@ -404,8 +351,7 @@ export default function AddTransactionScreen() {
                       isSelected && styles.pickerItemActive,
                     ]}
                     onPress={() => {
-                      if (modalVisible.type === "wallet")
-                        setSelectedWallet(item);
+                      if (modalVisible.type === "wallet") setSelectedWallet(item);
                       else setSelectedCategory(item);
                       setModalVisible({ ...modalVisible, show: false });
                     }}
@@ -415,7 +361,7 @@ export default function AddTransactionScreen() {
                       <Text style={styles.pickerText}>{item.name}</Text>
                       {modalVisible.type === "wallet" && (
                         <Text style={{ fontSize: 10, color: "#999" }}>
-                          Saldo: Rp {item.balance.toLocaleString()}
+                          Saldo: Rp {item.balance.toLocaleString("id-ID")}
                         </Text>
                       )}
                     </View>
@@ -423,6 +369,19 @@ export default function AddTransactionScreen() {
                   </TouchableOpacity>
                 );
               }}
+              ListEmptyComponent={() => (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#999' }}>Kategori belum dibuat.</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible({ ...modalVisible, show: false });
+                      router.push("../categories");
+                    }}
+                  >
+                    <Text style={{ color: '#2ecc71', marginTop: 10 }}>Tambah Sekarang</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               contentContainerStyle={{ paddingBottom: 30 }}
             />
           </View>

@@ -3,15 +3,15 @@ import { useRouter } from "expo-router";
 import { ChevronLeft, Plus, Trash2, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Modal,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { db } from "../services/database";
+import { db } from "../../services/database";
 import { styles } from "./styles";
 
 const BANK_OPTIONS = ["BCA", "Mandiri", "BNI", "BRI", "Bank Jago", "Seabank"];
@@ -21,7 +21,6 @@ export default function ManageWallets() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // State Input
   const [type, setType] = useState<"bank" | "cash">("cash");
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("0");
@@ -36,18 +35,24 @@ export default function ManageWallets() {
   };
 
   const handleAddWallet = async () => {
-    if (!name || !balance) return Alert.alert("Error", "Isi semua data!");
+    const numericBalance = parseFloat(balance.replace(/[^0-9.-]+/g, "")) || 0;
 
-    // Set icon otomatis berdasarkan tipe jika user belum ubah
-    const finalIcon = type === "bank" ? "🏦" : "💵";
+    if (!name.trim()) return Alert.alert("Error", "Nama dompet tidak boleh kosong!");
 
-    await db.runAsync(
-      "INSERT INTO wallets (name, icon, balance, type) VALUES (?, ?, ?, ?)",
-      [name, finalIcon, parseFloat(balance), type],
-    );
+    try {
+      const finalIcon = type === "bank" ? "🏦" : "💵";
 
-    resetForm();
-    fetchWallets();
+      await db.runAsync(
+        "INSERT INTO wallets (name, icon, balance, type) VALUES (?, ?, ?, ?)",
+        [name, finalIcon, numericBalance, type],
+      );
+
+      resetForm();
+      fetchWallets();
+    } catch (error) {
+      Alert.alert("Error", "Gagal menyimpan ke database");
+      console.error(error);
+    }
   };
 
   const resetForm = () => {
@@ -73,9 +78,8 @@ export default function ManageWallets() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.navigate("../")}>
           <ChevronLeft color="#1A1A1A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Daftar Dompet</Text>
@@ -88,7 +92,13 @@ export default function ManageWallets() {
         data={wallets}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.walletCard}>
+          <TouchableOpacity
+            style={styles.walletCard}
+            onPress={() => router.push({
+              pathname: "/(financefy)/wallet-detail/[id]",
+              params: { id: item.id }
+            })}
+          >
             <View style={styles.iconBox}>
               <Text style={{ fontSize: 20 }}>{item.icon}</Text>
             </View>
@@ -98,17 +108,19 @@ export default function ManageWallets() {
                 {item.type === "bank" ? "Rekening Bank" : "Cash/Dompet"}
               </Text>
               <Text style={styles.walletBalance}>
-                Rp {item.balance.toLocaleString()}
+                Rp {item.balance.toLocaleString("id-ID")}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => deleteWallet(item.id)}>
+            <TouchableOpacity
+              onPress={() => deleteWallet(item.id)}
+              style={{ padding: 10 }}
+            >
               <Trash2 size={20} color="#e74c3c" />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         )}
       />
 
-      {/* MODAL TAMBAH */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -119,7 +131,6 @@ export default function ManageWallets() {
               </TouchableOpacity>
             </View>
 
-            {/* Selector Tipe */}
             <View style={{ flexDirection: "row", marginBottom: 20, gap: 10 }}>
               {["cash", "bank"].map((t) => (
                 <TouchableOpacity

@@ -1,11 +1,11 @@
 import { AlertCircle, ChevronRight, Plus } from "lucide-react-native";
 import React from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function BudgetScreen() {
@@ -109,7 +109,7 @@ export default function BudgetScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Anggaran</Text>
+        <Text style={styles.headerTitle}>Anggaran (Dev)</Text>
         <TouchableOpacity style={styles.addBtn}>
           <Plus size={20} color="#2ecc71" />
           <Text style={styles.addBtnText}>Buat Anggaran</Text>

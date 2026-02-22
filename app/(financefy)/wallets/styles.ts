@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 60, // Sesuaikan dengan notch HP
+    paddingTop: 60,
     paddingBottom: 20,
     backgroundColor: "#FFF",
   },
@@ -21,8 +21,6 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1A1A1A",
   },
-
-  // List Wallet Styles
   walletCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -42,7 +40,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
-    // Shadow halus untuk icon box
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -60,8 +57,6 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 2,
   },
-
-  // Modal Styles (Bottom Sheet Look)
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -85,8 +80,6 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1A1A1A",
   },
-
-  // Form Styles
   input: {
     backgroundColor: "#F5F7F8",
     padding: 16,
@@ -109,8 +102,6 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-
-  // Optional: Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: "center",

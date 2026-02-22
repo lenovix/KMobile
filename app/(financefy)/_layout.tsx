@@ -24,13 +24,6 @@ export default function FinancefyLayout() {
       />
 
       <Tabs.Screen
-        name="wallet-detail/[id]"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
         name="transactions/index"
         options={{
           title: "Transaksi",
@@ -71,6 +64,25 @@ export default function FinancefyLayout() {
         options={{
           title: "Akun",
           tabBarIcon: ({ color }) => <User size={22} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="wallet-detail/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="wallets/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="categories/index"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

@@ -19,8 +19,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   saveBtn: { color: "#2ecc71", fontWeight: "700", fontSize: 15 },
-
-  // Selector tipe transaksi yang lebih soft
   typeSelector: {
     flexDirection: "row",
     marginHorizontal: 20,
@@ -44,8 +42,6 @@ export const styles = StyleSheet.create({
   },
   typeLabel: { color: "#7F8C8D", fontSize: 13, fontWeight: "500" },
   typeLabelActive: { color: "#1A1A1A", fontWeight: "700" },
-
-  // Input area yang clean
   inputSection: { padding: 30, alignItems: "center" },
   label: {
     fontSize: 12,
@@ -71,8 +67,6 @@ export const styles = StyleSheet.create({
     marginRight: 8,
   },
   amountInput: { fontSize: 48, fontWeight: "200", color: "#1A1A1A" },
-
-  // Form items dengan border tipis dan rapi
   formSection: { paddingHorizontal: 20 },
   formItem: {
     flexDirection: "row",
@@ -92,11 +86,20 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F1F1F1",
   },
-  itemContent: { flex: 1 },
-  itemLabel: { fontSize: 12, color: "#95A5A6", marginBottom: 2 },
-  itemValue: { fontSize: 15, color: "#1A1A1A", fontWeight: "500" },
-
-  // Switch area yang lebih menyatu
+  itemContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  itemLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 2,
+  },
+  itemValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
   switchSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -144,6 +147,11 @@ export const styles = StyleSheet.create({
   },
   pickerIcon: { fontSize: 22, marginRight: 15 },
   pickerText: { flex: 1, fontSize: 16, color: "#1A1A1A", fontWeight: "500" },
+  itemSubValue: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 2,
+  },
 });
 
 export const keypadStyles = StyleSheet.create({
@@ -170,7 +178,6 @@ export const keypadStyles = StyleSheet.create({
     fontWeight: "600",
     color: "#1A1A1A",
   },
-  // Tambahan untuk tampilan Text pengganti Input
   amountText: {
     fontSize: 32,
     fontWeight: "700",
