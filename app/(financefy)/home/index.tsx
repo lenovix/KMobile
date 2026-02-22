@@ -1,12 +1,11 @@
-// C:\Users\ichkm\Documents\KMobile\app\(financefy)\home\index.tsx
 import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import {
   ArrowDownCircle,
   ArrowUpCircle,
   ChevronRight,
   Eye,
-  EyeOff,
-  Wallet,
+  EyeOff
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -15,10 +14,10 @@ import { db } from "../../services/database";
 import { styles } from "./styles";
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const [wallets, setWallets] = useState<any[]>([]);
   const isFocused = useIsFocused();
   const [showBalance, setShowBalance] = useState(true);
-
-  // --- DATABASE STATES ---
   const [summary, setSummary] = useState({
     totalBalance: 0,
     income: 0,
@@ -33,20 +32,20 @@ export default function HomeScreen() {
 
   const loadHomeData = async () => {
     try {
-      // 1. Hitung Total Saldo dari semua Wallet
       const walletRes: any = await db.getFirstAsync(
         "SELECT SUM(balance) as total FROM wallets",
       );
 
-      // 2. Hitung Total Pemasukan & Pengeluaran (Bulan Ini)
-      // Tip IT Junior: Kita pakai strftime untuk filter bulan berjalan
+      const allWallets: any[] = await db.getAllAsync("SELECT * FROM wallets");
+      setWallets(allWallets);
+
       const statsRes: any[] = await db.getAllAsync(`
-        SELECT type, SUM(amount) as total 
-        FROM transactions 
-        WHERE strftime('%m', date) = strftime('%m', 'now')
-        AND exclude_from_report = 0
-        GROUP BY type
-      `);
+      SELECT type, SUM(amount) as total 
+      FROM transactions 
+      WHERE strftime('%m', date) = strftime('%m', 'now')
+      AND exclude_from_report = 0
+      GROUP BY type
+    `);
 
       let income = 0;
       let expense = 0;
@@ -132,46 +131,38 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
-          {/* 2. Wallet List */}
           <View style={styles.sectionHeaderChart}>
             <Text style={styles.sectionTitle}>Portofolio Dompet</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>Lihat Semua</Text>
             </TouchableOpacity>
           </View>
+
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.walletScroll}
           >
-            <View
-              style={[
-                styles.walletCard,
-                {
-                  backgroundColor: "#1e1e1e",
-                  borderColor: "#333",
-                  borderWidth: 1,
-                },
-              ]}
-            >
-              <Wallet color="#2ecc71" size={20} />
-              <Text style={styles.walletName}>Cash Flow</Text>
-              <Text style={styles.walletMoney}>Rp 500k</Text>
-            </View>
-            <View
-              style={[
-                styles.walletCard,
-                {
-                  backgroundColor: "#1e1e1e",
-                  borderColor: "#333",
-                  borderWidth: 1,
-                },
-              ]}
-            >
-              <Wallet color="#3498db" size={20} />
-              <Text style={styles.walletName}>Bank Mandiri</Text>
-              <Text style={styles.walletMoney}>Rp 14.7jt</Text>
-            </View>
+            {wallets.length > 0 ? (
+              wallets.map((wallet) => (
+                <TouchableOpacity
+                  key={wallet.id}
+                  onPress={() => router.push({
+                    pathname: "/(financefy)/wallet-detail/[id]",
+                    params: { id: wallet.id }
+                  })}
+                  style={[styles.walletCard]}
+                >
+                  <Text style={{ fontSize: 20 }}>{wallet.icon || "💰"}</Text>
+                  <Text style={styles.walletName}>{wallet.name}</Text>
+                  <Text style={styles.walletMoney}>{formatCurrency(wallet.balance)}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <TouchableOpacity style={[styles.walletCard, { borderStyle: 'dashed', borderWidth: 1, borderColor: '#555' }]}>
+                <Text style={{ color: '#888' }}>+ Tambah Dompet</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
 
           {/* 3. Laporan Mingguan - Dark Chart */}

@@ -1,5 +1,5 @@
-import * as Haptics from "expo-haptics"; // Import Haptics
-import { Tabs, useRouter } from "expo-router"; // Tambah useRouter
+import * as Haptics from "expo-haptics";
+import { Tabs, useRouter } from "expo-router";
 import { History, Home, PieChart, Plus, User } from "lucide-react-native";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
@@ -22,6 +22,14 @@ export default function FinancefyLayout() {
           tabBarIcon: ({ color }) => <Home size={22} color={color} />,
         }}
       />
+
+      <Tabs.Screen
+        name="wallet-detail/[id]"
+        options={{
+          href: null,
+        }}
+      />
+
       <Tabs.Screen
         name="transactions/index"
         options={{
@@ -30,9 +38,8 @@ export default function FinancefyLayout() {
         }}
       />
 
-      {/* TOMBOL TAMBAH (+) DENGAN NAVIGASI REAL */}
       <Tabs.Screen
-        name="add-transaction/index" // 1. UBAH INI
+        name="add-transaction/index"
         options={{
           title: "",
           tabBarButton: (props) => (
@@ -41,7 +48,6 @@ export default function FinancefyLayout() {
               style={styles.addButtonWrapper}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // 2. Navigasi ke rute yang benar
                 router.push("/(financefy)/add-transaction");
               }}
             >
@@ -80,7 +86,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 25,
     backgroundColor: "#ffffff",
     borderTopWidth: 0,
-    // Shadow untuk membuat tab bar melayang
     elevation: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
@@ -88,10 +93,10 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   addButtonWrapper: {
-    top: -25, // Membuat tombol lebih menonjol ke atas
+    top: -25,
     justifyContent: "center",
     alignItems: "center",
-    width: 70, // Area sentuh yang lebih luas
+    width: 70,
   },
   addButtonCircle: {
     width: 60,
@@ -100,7 +105,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#2ecc71",
     justifyContent: "center",
     alignItems: "center",
-    // Shadow khusus tombol agar terlihat 3D
     elevation: 8,
     shadowColor: "#2ecc71",
     shadowOffset: { width: 0, height: 4 },

@@ -1,6 +1,5 @@
 import * as SQLite from "expo-sqlite";
 
-// Membuka atau membuat database
 export const db = SQLite.openDatabaseSync("financefy.db");
 
 export const initDatabase = async () => {
